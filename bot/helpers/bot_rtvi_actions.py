@@ -39,7 +39,7 @@ async def register_rtvi_actions(rtvi: RTVIProcessor, user_aggregator: LLMUserCon
         if run_immediately:
             await rtvi.interrupt_bot()
 
-        # We just interrupted the bot so it should be find to use the
+        # We just interrupted the bot so it should be fine to use the
         # context directly instead of through frame.
 
         if "messages" in arguments and arguments["messages"]:

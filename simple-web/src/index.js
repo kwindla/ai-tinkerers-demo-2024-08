@@ -13,18 +13,23 @@ function main() {
       }
     },
 
+    //
     // client setup
+    //
     enableMic: true,
+    // enableCam: true,
     callbacks:{
       onBotReady: botReadyHandler,
       onTrackStarted: trackStartedHandler
     },
 
-    // the services we know our bot supports
+    //
+    // the services the bot we are talking to supports
+    //
     services: {
-      llm: "together",
-      tts: "cartesia",
-    }
+       llm: "anthropic",
+       tts: "cartesia",
+     }
   });
   const llmHelper = new LLMHelper({
     callbacks: {
@@ -48,13 +53,22 @@ function trackStartedHandler(track, participant) {
 
   console.log('Track started', track, participant);
 
-  if (participant.local || track.kind !== 'audio') {
+  if (participant.local && track.kind == 'video') {
+    console.log('local video track started', track, participant);
+    let videoElement = document.createElement('video');
+    videoElement.srcObject = new MediaStream([track]);
+    app.appendChild(videoElement);
+    videoElement.play();
     return;
   }
-  let audioElement = document.createElement('audio');
-  audioElement.srcObject = new MediaStream([track]);
-  document.body.appendChild(audioElement);
-  audioElement.play();
+
+  if (!participant.local && track.kind == 'audio') {
+    console.log('audio track started', track, participant);
+    let audioElement = document.createElement('audio');
+    audioElement.srcObject = new MediaStream([track]);
+    document.body.appendChild(audioElement);
+    audioElement.play();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
