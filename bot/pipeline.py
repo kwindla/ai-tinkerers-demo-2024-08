@@ -42,8 +42,6 @@ logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
 # logger.add(sys.stderr, level="TRACE")
 
-video_participant_id = None
-
 
 async def main():
     global llm

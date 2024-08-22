@@ -2,6 +2,8 @@
 import { DailyVoiceClient } from "realtime-ai-daily";
 import { LLMHelper } from "realtime-ai";
 
+window.voiceClient;
+window.micEnabled = true;
 
 function main() {
   const voiceClient = new DailyVoiceClient({
@@ -31,6 +33,7 @@ function main() {
        tts: "cartesia",
      }
   });
+
   const llmHelper = new LLMHelper({
     callbacks: {
       onLLMFunctionCall: (fn) => {
@@ -38,6 +41,7 @@ function main() {
       },
     },
   });
+  window.voiceClient = voiceClient;
   voiceClient.registerHelper("llm", llmHelper);
   voiceClient.start()
 }
@@ -82,6 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
   start_button.textContent = 'Start';
   start_button.addEventListener('click', main);
   app.appendChild(start_button);
+
+  const toggle_button = document.createElement('button');
+  toggle_button.textContent = 'mute/unmute';
+  toggle_button.addEventListener('click', () => {
+    window.micEnabled = !window.micEnabled;
+    console.log('toggle mic to', window.micEnabled);
+    window.voiceClient.enableMic(window.micEnabled);
+  });
+  app.appendChild(toggle_button);
 
   console.log('Hello, AI Tinkerers!');
 });

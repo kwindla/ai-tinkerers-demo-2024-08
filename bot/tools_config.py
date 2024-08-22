@@ -68,6 +68,7 @@ async def get_image(function_name, tool_call_id, arguments, llm, context, result
     video_participant_id = getattr(llm, 'video_participant_id', None)
     logger.debug(f"VIDEO PARTICIPANT ID: {video_participant_id}")
     await llm.request_image_frame(user_id=video_participant_id, text_content=question)
+    await result_callback("done.")
 
 
 def register_functions(llm):
