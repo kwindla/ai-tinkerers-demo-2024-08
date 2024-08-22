@@ -4,7 +4,7 @@ This is a small demo showing how to build an RTVI and Pipecat voice-to-voice AI 
 
 The tech stack is:
   - Deepgram speech-to-text
-  - Anthropic LLM
+  - Anthropic Claude 3.5 Sonnet LLM
   - Cartesia voice
   - Daily transport
 
@@ -44,7 +44,11 @@ Now open the URL that `npm start` printed out in a web browser. Click "start". I
 
 The default prompt is just a simple "talk like a pirate" message.
 
-To try tool calling and vision, swap `tool_config.py` into `pipeline.py` in place of `config.py`. Then restart the pipeline and rejoin from the web client.
+To try tool calling and vision, 
+
+1. Uncomment `enableCam: true` in the client, [here](https://github.com/kwindla/ai-tinkerers-demo-2024-08/blob/main/simple-web/src/index.js#L22)
+2. swap `tool_config.py` into `pipeline.py` in place of `config.py` [here](https://github.com/kwindla/ai-tinkerers-demo-2024-08/blob/main/bot/pipeline.py#L3)
+3. Restart the pipeline and rejoin from the web client.
 
 ## next steps
 
