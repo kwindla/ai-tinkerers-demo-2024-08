@@ -19,7 +19,7 @@ function main() {
     // client setup
     //
     enableMic: true,
-    // enableCam: true,
+    enableCam: true,
     callbacks:{
       onBotReady: botReadyHandler,
       onTrackStarted: trackStartedHandler
@@ -78,7 +78,7 @@ function trackStartedHandler(track, participant) {
 document.addEventListener('DOMContentLoaded', () => {
   const app = document.getElementById('app');
   const header = document.createElement('h1');
-  header.textContent = 'Hello, AI Tinkerers!';
+  header.textContent = 'Hello, YC Live!';
   header.id = 'main-header'
   app.appendChild(header);
 

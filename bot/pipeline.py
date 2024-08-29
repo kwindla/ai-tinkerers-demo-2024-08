@@ -1,20 +1,25 @@
 
-from config import config, register_functions
+# from config import config, register_functions
 # from tools_config import config, register_functions
-
+from llama_tools_config import config, register_functions
 
 import asyncio
 import aiohttp
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame
+from typing import AsyncGenerator
+
+from pipecat.frames.frames import Frame, TextFrame, LLMMessagesFrame, VisionImageRawFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.services.cartesia import CartesiaTTSService
+from pipecat.services.moondream import MoondreamService
 
-from pipecat.services.anthropic import AnthropicLLMService, AnthropicUserContextAggregator, AnthropicAssistantContextAggregator
+# from pipecat.services.anthropic import AnthropicLLMService, AnthropicUserContextAggregator, AnthropicAssistantContextAggregator
+
+from pipecat.services.together import TogetherLLMService, TogetherUserContextAggregator, TogetherAssistantContextAggregator
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecat.vad.silero import SileroVADAnalyzer
 
@@ -43,6 +48,27 @@ logger.add(sys.stderr, level="DEBUG")
 # logger.add(sys.stderr, level="TRACE")
 
 
+class MoondreamToLlama31Adapter(MoondreamService):
+    def __init__(self, user_aggregator: TogetherUserContextAggregator):
+        super().__init__()
+        self.user_aggregator = user_aggregator
+
+    async def run_vision(self, frame: VisionImageRawFrame) -> AsyncGenerator[Frame, None]:
+        async for text_frame in super().run_vision(frame):
+            if not isinstance(text_frame, TextFrame):
+                logger.debug(f"Unexpected frame type from Moondream: {type(text_frame)}")
+                yield text_frame
+                continue
+
+            description = text_frame.text
+            logger.debug(f"Moondream description: {description}")
+            # should this actually be a new frame that triggers the append-and-push? is
+            # reaching into the context aggregator like this a good idea? it might actually
+            # be cleaner just to send a frame upstream, I guess.
+            self.user_aggregator.append_image_description_tool_message(description)
+            yield self.user_aggregator.get_messages_frame()
+
+
 async def main():
     global llm
 
@@ -68,10 +94,8 @@ async def main():
             sample_rate=16000,
         )
 
-        llm = AnthropicLLMService(
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            model="claude-3-5-sonnet-20240620",
-            enable_prompt_caching_beta=True
+        llm = TogetherLLMService(
+            api_key=os.getenv("TOGETHER_API_KEY"),
         )
         register_functions(llm)
 
@@ -81,6 +105,8 @@ async def main():
         context_aggregator = llm.create_context_aggregator(context)
         user_aggregator = context_aggregator.user()
         assistant_aggregator = context_aggregator.assistant()
+
+        moondream = MoondreamToLlama31Adapter(user_aggregator=user_aggregator)
 
         rtvi = RTVIProcessor(config=RTVIConfig(config=config))
         await register_rtvi_services(rtvi, user_aggregator)
@@ -95,6 +121,7 @@ async def main():
             transport.input(),               # Transport user input
             rtvi,                            # RTVI
             context_aggregator.user(),       # User speech to text
+            moondream,
             llm,                             # LLM
             tts,                             # TTS
             transport.output(),              # Transport bot output
