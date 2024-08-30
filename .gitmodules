@@ -1,3 +1,0 @@
-[submodule "bot/pipecat"]
-	path = bot/pipecat
-	url = git@github.com:pipecat-ai/pipecat.git
