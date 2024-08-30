@@ -1,40 +1,27 @@
-
 from config import config, register_functions
-# from tools_config import config, register_functions
-# from llama_tools_config import config, register_functions
 
 import asyncio
 import aiohttp
 import os
 import sys
 
-from typing import AsyncGenerator
-
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.moondream import MoondreamService
 
-from pipecat.services.together import TogetherLLMService, TogetherUserContextAggregator, TogetherAssistantContextAggregator
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecat.vad.vad_analyzer import VADParams
 from pipecat.vad.silero import SileroVADAnalyzer
+from pipecat.processors.frameworks.rtvi import (RTVIConfig, RTVIProcessor, RTVIServiceConfig)
+from pipecat.services.moondream import MoondreamService
+from pipecat.services.together import TogetherLLMService
+from pipecat.services.cartesia import CartesiaTTSService
 
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
-
-from pipecat.processors.frameworks.rtvi import (
-    RTVIConfig,
-    RTVIProcessor,
-    RTVIServiceConfig,
-    RTVIServiceOptionConfig)
+from openai._types import NotGiven
 
 from helpers.bot_rtvi_actions import register_rtvi_actions
 from helpers.bot_rtvi_services import register_rtvi_services
-
-
-from openai._types import NotGiven
 
 from loguru import logger
 
@@ -43,7 +30,6 @@ load_dotenv(override=True)
 
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
-# logger.add(sys.stderr, level="TRACE")
 
 
 async def main():
@@ -61,7 +47,7 @@ async def main():
                 audio_out_enabled=True,
                 transcription_enabled=True,
                 vad_enabled=True,
-                vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=0.3))
+                vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=0.5))
             )
         )
 
@@ -82,8 +68,6 @@ async def main():
         context_aggregator = llm.create_context_aggregator(context)
         user_aggregator = context_aggregator.user()
         assistant_aggregator = context_aggregator.assistant()
-
-        # moondream = MoondreamToLlama31Adapter(user_aggregator=user_aggregator)
 
         rtvi = RTVIProcessor(config=RTVIConfig(config=config))
         await register_rtvi_services(rtvi, user_aggregator)
