@@ -1,7 +1,7 @@
 
-# from config import config, register_functions
+from config import config, register_functions
 # from tools_config import config, register_functions
-from llama_tools_config import config, register_functions
+# from llama_tools_config import config, register_functions
 
 import asyncio
 import aiohttp
@@ -16,10 +16,9 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.services.cartesia import CartesiaTTSService
 from pipecat.services.moondream import MoondreamService
 
-# from pipecat.services.anthropic import AnthropicLLMService, AnthropicUserContextAggregator, AnthropicAssistantContextAggregator
-
 from pipecat.services.together import TogetherLLMService, TogetherUserContextAggregator, TogetherAssistantContextAggregator
 from pipecat.transports.services.daily import DailyParams, DailyTransport
+from pipecat.vad.vad_analyzer import VADParams
 from pipecat.vad.silero import SileroVADAnalyzer
 
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
@@ -62,7 +61,7 @@ async def main():
                 audio_out_enabled=True,
                 transcription_enabled=True,
                 vad_enabled=True,
-                vad_analyzer=SileroVADAnalyzer()
+                vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=0.3))
             )
         )
 
@@ -112,14 +111,19 @@ async def main():
                 allow_interruptions=True,
                 enable_metrics=True))
 
-        @transport.event_handler("on_first_participant_joined")
-        async def on_first_participant_joined(transport, participant):
-            logger.debug("FIRST P JOINED")
+        @ transport.event_handler("on_participant_joined")
+        async def on_participant_joined(transport, participant):
+            logger.debug("PARTICIPANT JOINED")
             video_participant_id = participant["id"]
             transport.capture_participant_transcription(video_participant_id)
             transport.capture_participant_video(video_participant_id, framerate=0)
-            logger.debug("SETTING ATTRIBUTE")
             setattr(llm, 'video_participant_id', video_participant_id)
+
+        async def on_participant_left(transport, participant):
+            logger.debug(f"PARTICIPANT LEFT {participant}")
+            video_participant_id = participant["id"]
+            transport.stop_capture_participant_transcription(video_participant_id)
+            transport.stop_capture_participant_video(video_participant_id)
 
         runner = PipelineRunner()
         await runner.run(task)

@@ -2,10 +2,16 @@
 import { DailyVoiceClient } from "realtime-ai-daily";
 import { LLMHelper } from "realtime-ai";
 
+import { simpleConfig } from "./rtvi.simple-config.ts";
+import { visionConfig } from "./rtvi.vision-config.ts";
+
 window.voiceClient;
 window.micEnabled = true;
+window.camEnabled = false;
 
-function main() {
+function main(withCam) {
+  window.camEnabled = withCam;
+
   const voiceClient = new DailyVoiceClient({
     // connection setup for local demo
     customAuthHandler: async () => {
@@ -18,8 +24,8 @@ function main() {
     //
     // client setup
     //
-    enableMic: true,
-    enableCam: true,
+    enableMic: window.micEnabled,
+    enableCam: window.camEnabled,
     callbacks:{
       onBotReady: botReadyHandler,
       onTrackStarted: trackStartedHandler
@@ -29,7 +35,7 @@ function main() {
     // the services the bot we are talking to supports
     //
     services: {
-       llm: "anthropic",
+       llm: "together",
        tts: "cartesia",
      }
   });
@@ -46,10 +52,16 @@ function main() {
   voiceClient.start()
 }
 
-function botReadyHandler() {
+async function botReadyHandler() {
   console.log('Bot ready');
   const header = document.getElementById('main-header');
   header.textContent = 'Connected ...';
+  if (window.camEnabled) {
+    await window.voiceClient.updateConfig(visionConfig);
+  } else {
+    await window.voiceClient.updateConfig(simpleConfig);
+  }
+  window.voiceClient.getHelper('llm').run();
 }
 
 function trackStartedHandler(track, participant) {
@@ -82,20 +94,25 @@ document.addEventListener('DOMContentLoaded', () => {
   header.id = 'main-header'
   app.appendChild(header);
 
-  const start_button = document.createElement('button');
-  start_button.textContent = 'Start';
-  start_button.addEventListener('click', main);
-  app.appendChild(start_button);
+  const start_button_1 = document.createElement('button');
+  start_button_1.textContent = 'Start Simple';
+  start_button_1.addEventListener('click', () => main(false));
+  app.appendChild(start_button_1);
 
-  const toggle_button = document.createElement('button');
-  toggle_button.textContent = 'mute/unmute';
-  toggle_button.addEventListener('click', () => {
+  const start_button_2 = document.createElement('button');
+  start_button_2.textContent = 'Start With Cam On';
+  start_button_2.addEventListener('click', () => main(true));
+  app.appendChild(start_button_2);
+
+  const toggle_mic_button = document.createElement('button');
+  toggle_mic_button.textContent = 'mute/unmute';
+  toggle_mic_button.addEventListener('click', () => {
     window.micEnabled = !window.micEnabled;
     console.log('toggle mic to', window.micEnabled);
     window.voiceClient.enableMic(window.micEnabled);
   });
-  app.appendChild(toggle_button);
-
-  console.log('Hello, AI Tinkerers!');
+  app.appendChild(toggle_mic_button);
 });
 
+
+//   
